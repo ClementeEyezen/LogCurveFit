@@ -4,12 +4,13 @@ public class FitOptimizer
 {
 	private double[][] data;
 	private double[] approx_rate;
-	private double est_carrying_capacity;
 	private LogisticModel model;
+	
+	private double precision = .010;
+	
 	public FitOptimizer(double[][] input)
 	{
 		this.data = input;
-		est_carrying_capacity = input[input.length-1][0];
 		approx_rate = new double[data.length-1];
 		model = initialguess();
 	}
@@ -18,7 +19,7 @@ public class FitOptimizer
 	{
 		FitOptimizer fo = new FitOptimizer(hawaii());
 		
-		int max_cycles = 10;
+		int max_cycles = 100;
 		for (int i = 1 ; i < 10 ; i++)
 		{
 			fo.model = fo.initialguess();
@@ -129,19 +130,32 @@ public class FitOptimizer
 		// to approximate model, the normalized high point (max) is compared to beginning and end
 		//  in order to approximate the part of P that is covered by data, use extended form of quadratic to back out to find percentage of P range
 		// %P = -.5 +- .5*sqrt(1-(% of max))
-		double near_percent = Math.max(.5+(.5*Math.sqrt(1-(approx_rate[0]/max_rate))),
+		System.out.println("max_value: "+approx_rate[max_index]+" right_value:"+
+				approx_rate[approx_rate.length-1]+" left_value:"+approx_rate[0]);
+		System.out.println("left_ratio: "+(approx_rate[0]/approx_rate[max_index]+"").substring(0,4)+
+				" right_ratio: "+(approx_rate[approx_rate.length-1]/approx_rate[max_index]+"").substring(0,4));
+		System.out.println("left quad. form.: -.5+- .5*sqrt(1-rate/max_rate)\n"+
+				(.5-(.5*Math.sqrt(1-(approx_rate[0]/max_rate))))+"\n");
+		double near_percent = Math.min(.5+(.5*Math.sqrt(1-(approx_rate[0]/max_rate))),
 				.5-(.5*Math.sqrt(1-(approx_rate[0]/max_rate))));
 		double far_percent = Math.max(.5+(.5*Math.sqrt(1-(approx_rate[approx_rate.length-1]/max_rate))),
 				.5-(.5*Math.sqrt(1-(approx_rate[approx_rate.length-1]/max_rate))));
 		double total_normalized_population_range = -near_percent+far_percent;
 
-		System.out.println("near_percent:"+near_percent+" far_percent:"+far_percent);
+		System.out.println("near_percent: .5-"+(.5-near_percent)+
+				" far_percent: .5+"+(far_percent-.5));
 		//if the near data is the max rate, assume that it is the mid point
 		double min_population = 0;
 		if (max_index > 0)
 		{
 			//otherwise use my estimation
-			min_population = (data[max_index][0]-data[0][0])*.5/(.5-near_percent);
+			//min_population = data[max_index][0]-((data[max_index][0]-data[0][0])*.5/(.5-near_percent));
+			double current_range = data[max_index][0]-data[0][0];
+			double ratio = (.5-near_percent)/.5;
+			double est_full_range = current_range/ratio;
+			System.out.println("The current range ("+current_range+") is "+ratio*100+"% of total range ("+est_full_range+")");
+			min_population = data[max_index][0]-est_full_range;
+			System.out.println("min_population calc: "+min_population);
 		}
 
 		//if the data is at it's max growth (exponential pattern) assume that it is at half way point
@@ -149,7 +163,13 @@ public class FitOptimizer
 		if (max_index < data.length-2)
 		{
 			//otherwise use my estimation
-			max_population = (data[data.length-2][0] - data[max_index][0])*.5/(far_percent-.5);
+			//max_population = (data[data.length-2][0] - data[max_index][0])*.5/(far_percent-.5);
+			double current_range = data[data.length-2][0]-data[max_index][0];
+			double ratio = (far_percent-.5)/.5;
+			double est_full_range = current_range/ratio;
+			System.out.println("The current range ("+current_range+") is "+ratio*100+"% of total range ("+est_full_range+")");
+			max_population = data[max_index][0]-est_full_range;
+			System.out.println("max_population calc: "+max_population);
 		}
 
 		//max_population is carrying capacity
@@ -169,7 +189,7 @@ public class FitOptimizer
 	}
 	public double fitRating(LogisticModel test)
 	{
-		double rating = -1;
+		double rating = 100;
 		double sum = 0;
 		int count = 0;
 		for (int i = 0 ; i < data.length-1 ; i++ )
@@ -179,15 +199,17 @@ public class FitOptimizer
 		}
 		//the rating is the sum of the squares to the line predicted vs. measured data
 		// low is better
-		// -1 is default/error value
+		// 100 is default
 		rating = sum / (double) (count);
+		//get the average distance to the fit, then divide by max population as an approximate
+		// scaling factor so that output is comparable between runs.
+		rating = 100*Math.sqrt(rating) / data[data.length-1][0];
 		return rating;
 	}
 	public LogisticModel[] local_test(LogisticModel start)
 	{
 		// returns an array of models near the value of the input model
 		LogisticModel[] ret_models = new LogisticModel[6];
-		double precision = .1;
 		ret_models[0] = new LogisticModel( start.k*(1+precision) , start.N , start.c );
 		ret_models[1] = new LogisticModel( start.k*(1-precision)  , start.N , start.c );
 		ret_models[2] = new LogisticModel( start.k , start.N*(1+precision) , start.c );
