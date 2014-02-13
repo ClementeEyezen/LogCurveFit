@@ -17,9 +17,9 @@ public class FitOptimizer
 
 	public static void main(String[] args)
 	{
-		FitOptimizer fo = new FitOptimizer(hawaii());
+		FitOptimizer fo = new FitOptimizer(montana());
 		
-		int max_cycles = 100;
+		int max_cycles = 1000;
 		for (int i = 1 ; i < 10 ; i++)
 		{
 			fo.model = fo.initialguess();
@@ -82,6 +82,27 @@ public class FitOptimizer
 
 		population_data[8][0] = 965; population_data[9][0] = 1108;
 		population_data[10][0] = 1212;
+
+		return population_data;
+	}
+	public static double[][] montana()
+	{
+		double[][] population_data = new double[14][2];
+		//assign years
+		for ( int i = 1870 ; i <= 2000 ; i = i+10)
+		{
+			population_data[(i-1870)/10][1] = (double) i;
+		}
+		population_data[0][0] = 21; population_data[1][0] = 39;
+		population_data[2][0] = 143; population_data[3][0] = 243;
+
+		population_data[4][0] = 376; population_data[5][0] = 549;
+		population_data[6][0] = 538; population_data[7][0] = 559;
+
+		population_data[8][0] = 591; population_data[9][0] = 675;
+		population_data[10][0] = 694; population_data[11][0] = 787;
+		
+		population_data[12][0] = 799; population_data[13][0] = 902;
 
 		return population_data;
 	}
