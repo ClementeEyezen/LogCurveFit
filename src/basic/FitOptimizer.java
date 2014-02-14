@@ -6,7 +6,8 @@ public class FitOptimizer
 	private double[] approx_rate;
 	private LogisticModel model;
 	
-	private double precision = .010;
+	private double precision = .001;
+	private static int max_cycles = 9999;
 	
 	public FitOptimizer(double[][] input)
 	{
@@ -17,10 +18,9 @@ public class FitOptimizer
 
 	public static void main(String[] args)
 	{
-		FitOptimizer fo = new FitOptimizer(montana());
+		FitOptimizer fo = new FitOptimizer(hawaii());
 		
-		int max_cycles = 1000;
-		for (int i = 1 ; i < 10 ; i++)
+		for (int i = 0 ; i < 10 ; i++)
 		{
 			fo.model = fo.initialguess();
 			int count = 0;
@@ -39,7 +39,7 @@ public class FitOptimizer
 			System.out.println("result for "+i*max_cycles+" cycles --> dP/dt = "+result.k+"*P * (1-(P/"+result.N+")) + "+result.c);
 		}
 	}
-	public static double[][] massachucets()
+	public static double[][] massachusetts()
 	{
 		double[][] population_data = new double[22][2];
 		//assign years
@@ -122,7 +122,10 @@ public class FitOptimizer
 			{
 				model = test_set[i];
 				fitness_rating = test_rating;
-				System.out.print((" v"+fitness_rating).substring(0,9));
+				if (max_cycles < 10000 || fitness_rating < 1.94)
+				{
+					System.out.print((" v"+fitness_rating).substring(0,9));
+				}
 				better_soln_found = true;
 			}
 		}
@@ -156,7 +159,9 @@ public class FitOptimizer
 		System.out.println("left_ratio: "+(approx_rate[0]/approx_rate[max_index]+"").substring(0,4)+
 				" right_ratio: "+(approx_rate[approx_rate.length-1]/approx_rate[max_index]+"").substring(0,4));
 		System.out.println("left quad. form.: -.5+- .5*sqrt(1-rate/max_rate)\n"+
-				(.5-(.5*Math.sqrt(1-(approx_rate[0]/max_rate))))+"\n");
+				(.5-(.5*Math.sqrt(1-(approx_rate[0]/max_rate))))+"");
+		System.out.println("right quad. form.: -.5+- .5*sqrt(1-rate/max_rate)\n"+
+				(.5+(.5*Math.sqrt(1-(approx_rate[approx_rate.length-1]/max_rate))))+"");
 		double near_percent = Math.min(.5+(.5*Math.sqrt(1-(approx_rate[0]/max_rate))),
 				.5-(.5*Math.sqrt(1-(approx_rate[0]/max_rate))));
 		double far_percent = Math.max(.5+(.5*Math.sqrt(1-(approx_rate[approx_rate.length-1]/max_rate))),
@@ -167,14 +172,14 @@ public class FitOptimizer
 				" far_percent: .5+"+(far_percent-.5));
 		//if the near data is the max rate, assume that it is the mid point
 		double min_population = 0;
-		if (max_index > 0)
+		if (max_index > 0 && true)
 		{
 			//otherwise use my estimation
 			//min_population = data[max_index][0]-((data[max_index][0]-data[0][0])*.5/(.5-near_percent));
 			double current_range = data[max_index][0]-data[0][0];
 			double ratio = (.5-near_percent)/.5;
 			double est_full_range = current_range/ratio;
-			System.out.println("The current range ("+current_range+") is "+ratio*100+"% of total range ("+est_full_range+")");
+			System.out.println("The min current range ("+current_range+") is "+ratio*100+"% of total range ("+est_full_range+")");
 			min_population = data[max_index][0]-est_full_range;
 			System.out.println("min_population calc: "+min_population);
 		}
@@ -188,8 +193,8 @@ public class FitOptimizer
 			double current_range = data[data.length-2][0]-data[max_index][0];
 			double ratio = (far_percent-.5)/.5;
 			double est_full_range = current_range/ratio;
-			System.out.println("The current range ("+current_range+") is "+ratio*100+"% of total range ("+est_full_range+")");
-			max_population = data[max_index][0]-est_full_range;
+			System.out.println("The max current range ("+current_range+") is "+ratio*100+"% of total range ("+est_full_range+")");
+			max_population = data[max_index][0]+est_full_range;
 			System.out.println("max_population calc: "+max_population);
 		}
 
@@ -236,7 +241,7 @@ public class FitOptimizer
 		ret_models[2] = new LogisticModel( start.k , start.N*(1+precision) , start.c );
 		ret_models[3] = new LogisticModel( start.k , start.N*(1-precision)  , start.c );
 		ret_models[4] = new LogisticModel( start.k , start.N , start.c*(1+precision) );
-		ret_models[5] = new LogisticModel( start.k , start.N , start.c*(1+precision) );
+		ret_models[5] = new LogisticModel( start.k , start.N , start.c*(1-precision) );
 		return ret_models;
 	}
 }

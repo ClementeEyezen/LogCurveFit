@@ -13,6 +13,6 @@ public class LogisticModel
 	}
 	public double f(double population)
 	{
-		return k*population*(1-(population/N));
+		return k*population*(1-(population/N))+c;
 	}
 }
