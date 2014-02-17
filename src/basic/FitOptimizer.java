@@ -8,8 +8,9 @@ public class FitOptimizer
 	private ExponentialModel exp_model;
 	private LinearModel lin_model;
 	
-	private double precision = .001;
-	private static int max_cycles = 100;
+	private static double precision = .001;
+	private static int max_cycles = 1000;
+	private static double[][] data_set = northCarolina();
 	
 	public FitOptimizer(double[][] input)
 	{
@@ -22,7 +23,7 @@ public class FitOptimizer
 
 	public static void main(String[] args)
 	{
-		FitOptimizer fo = new FitOptimizer(hawaii());
+		FitOptimizer fo = new FitOptimizer(data_set);
 		/* LOGISTIC MODEL
 		for (int i = 0 ; i < 10 ; i++)
 		{
@@ -40,8 +41,8 @@ public class FitOptimizer
 			}
 			System.out.print("\n");
 			LogisticModel result = fo.log_result();
-			System.out.println("result for "+i*max_cycles+" cycles --> dP/dt = "+result.k+"*P * (1-(P/"+result.N+")) + "+result.c);
-		}*/
+			System.out.println("result for "+(count)+" cycles --> dP/dt = "+result.k+"*P * (1-(P/"+result.N+")) + "+result.c);
+		}//*/
 		///* EXPONENTIAL MODEL
 		for (int i = 0 ; i < 10 ; i++)
 		{
@@ -61,6 +62,7 @@ public class FitOptimizer
 			ExponentialModel result = fo.exp_result();
 			System.out.println("result for "+count+" cycles --> dP/dt = "+result.k+" * P");
 		}//*/
+		System.out.println("precision: "+precision);
 	}
 	public static double[][] massachusetts()
 	{
@@ -129,6 +131,60 @@ public class FitOptimizer
 
 		return population_data;
 	}
+	public static double[][] newYork()
+	{
+		double[][] population_data = new double[22][2];
+		//assign years
+		for ( int i = 1790 ; i <= 2000 ; i = i+10)
+		{
+			population_data[(i-1790)/10][1] = (double) i;
+		}
+		population_data[0][0] = 340; population_data[1][0] = 589;
+		population_data[2][0] = 959; population_data[3][0] = 1373;
+
+		population_data[4][0] = 1919; population_data[5][0] = 2429;
+		population_data[6][0] = 3097; population_data[7][0] = 3881;
+
+		population_data[8][0] = 4383; population_data[9][0] = 5083;
+		population_data[10][0] = 6003; population_data[11][0] = 7269;
+
+		population_data[12][0] = 9114; population_data[13][0] = 10385;
+		population_data[14][0] = 12588; population_data[15][0] = 13479;
+
+		population_data[16][0] = 14830; population_data[17][0] = 16782;
+		population_data[18][0] = 18241; population_data[19][0] = 17558;
+
+		population_data[20][0] = 17990; population_data[21][0] = 18976;
+
+		return population_data;
+	}
+	public static double[][] northCarolina()
+	{
+		double[][] population_data = new double[22][2];
+		//assign years
+		for ( int i = 1790 ; i <= 2000 ; i = i+10)
+		{
+			population_data[(i-1790)/10][1] = (double) i;
+		}
+		population_data[0][0] = 394; population_data[1][0] = 478;
+		population_data[2][0] = 556; population_data[3][0] = 639;
+
+		population_data[4][0] = 738; population_data[5][0] = 753;
+		population_data[6][0] = 869; population_data[7][0] = 993;
+
+		population_data[8][0] = 1071; population_data[9][0] = 1400;
+		population_data[10][0] = 1618; population_data[11][0] = 1893;
+
+		population_data[12][0] = 2206; population_data[13][0] = 2559;
+		population_data[14][0] = 3170; population_data[15][0] = 3572;
+
+		population_data[16][0] = 4062; population_data[17][0] = 4556;
+		population_data[18][0] = 5084; population_data[19][0] = 5880;
+
+		population_data[20][0] = 6628; population_data[21][0] = 8049;
+
+		return population_data;
+	}
 	public LogisticModel log_result()
 	{
 		return log_model;
@@ -153,7 +209,7 @@ public class FitOptimizer
 			{
 				log_model = test_set[i];
 				fitness_rating = test_rating;
-				if (max_cycles < 10000 || fitness_rating < 1.94)
+				if (max_cycles < 10000 || fitness_rating < 1.5634)
 				{
 					System.out.print((" Lv"+fitness_rating).substring(0,9));
 				}
@@ -284,7 +340,7 @@ public class FitOptimizer
 		double y1 = data[data.length-2][0];
 		double x2 = data[data.length-1][1];
 		double y2 = data[data.length-1][0];
-		return new LinearModel( (x2-x1)/(y2-y1) , y1 , x1 );
+		return new LinearModel( (x2-x1)/(y2-y1) );
 	}
 	public double fitRating(LogisticModel test)
 	{
