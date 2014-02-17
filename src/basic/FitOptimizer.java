@@ -4,30 +4,34 @@ public class FitOptimizer
 {
 	private double[][] data;
 	private double[] approx_rate;
-	private LogisticModel model;
+	private LogisticModel log_model;
+	private ExponentialModel exp_model;
+	private LinearModel lin_model;
 	
 	private double precision = .001;
-	private static int max_cycles = 9999;
+	private static int max_cycles = 100;
 	
 	public FitOptimizer(double[][] input)
 	{
 		this.data = input;
 		approx_rate = new double[data.length-1];
-		model = initialguess();
+		log_model = log_initialguess();
+		exp_model = exp_initialguess();
+		lin_model = lin_initialguess();
 	}
 
 	public static void main(String[] args)
 	{
 		FitOptimizer fo = new FitOptimizer(hawaii());
-		
+		/* LOGISTIC MODEL
 		for (int i = 0 ; i < 10 ; i++)
 		{
-			fo.model = fo.initialguess();
+			fo.log_model = fo.log_initialguess();
 			int count = 0;
 			boolean successfulOptimization = true;
 			while (successfulOptimization && (count <  i*max_cycles))
 			{
-				successfulOptimization = fo.optimize();
+				successfulOptimization = fo.log_optimize();
 				if (!successfulOptimization)
 				{
 					System.out.println("\nreached local min in state space at step "+count);
@@ -35,9 +39,28 @@ public class FitOptimizer
 				count++;
 			}
 			System.out.print("\n");
-			LogisticModel result = fo.result();
+			LogisticModel result = fo.log_result();
 			System.out.println("result for "+i*max_cycles+" cycles --> dP/dt = "+result.k+"*P * (1-(P/"+result.N+")) + "+result.c);
-		}
+		}*/
+		///* EXPONENTIAL MODEL
+		for (int i = 0 ; i < 10 ; i++)
+		{
+			fo.exp_model = fo.exp_initialguess();
+			int count = 0;
+			boolean successfulOptimization = true;
+			while (successfulOptimization && (count <  i*max_cycles))
+			{
+				successfulOptimization = fo.exp_optimize();
+				if (!successfulOptimization)
+				{
+					System.out.println("\nreached local min in state space at step "+count);
+				}
+				count++;
+			}
+			System.out.print("\n");
+			ExponentialModel result = fo.exp_result();
+			System.out.println("result for "+count+" cycles --> dP/dt = "+result.k+" * P");
+		}//*/
 	}
 	public static double[][] massachusetts()
 	{
@@ -106,32 +129,61 @@ public class FitOptimizer
 
 		return population_data;
 	}
-	public LogisticModel result()
+	public LogisticModel log_result()
 	{
-		return model;
+		return log_model;
 	}
-	public boolean optimize()
+	public ExponentialModel exp_result()
+	{
+		return exp_model;
+	}
+	public LinearModel lin_result()
+	{
+		return lin_model;
+	}
+	public boolean log_optimize()
 	{
 		boolean better_soln_found = false;
-		double fitness_rating = fitRating(model);
-		LogisticModel[] test_set = local_test(model);
-		for (int i = 0 ; i < 6 ; i++ )
+		double fitness_rating = fitRating(log_model);
+		LogisticModel[] test_set = log_local_test(log_model);
+		for (int i = 0 ; i < test_set.length ; i++ )
 		{
 			double test_rating = fitRating(test_set[i]);
 			if (test_rating < fitness_rating)
 			{
-				model = test_set[i];
+				log_model = test_set[i];
 				fitness_rating = test_rating;
 				if (max_cycles < 10000 || fitness_rating < 1.94)
 				{
-					System.out.print((" v"+fitness_rating).substring(0,9));
+					System.out.print((" Lv"+fitness_rating).substring(0,9));
 				}
 				better_soln_found = true;
 			}
 		}
 		return better_soln_found;
 	}
-	public LogisticModel initialguess()
+	public boolean exp_optimize()
+	{
+		boolean better_soln_found = false;
+		double fitness_rating = fitRating(exp_model);
+		ExponentialModel[] test_set = exp_local_test(exp_model);
+		for (int i = 0 ; i < test_set.length ; i++ )
+		{
+			double test_rating = fitRating(test_set[i]);
+			if (test_rating < fitness_rating)
+			{
+				exp_model = test_set[i];
+				fitness_rating = test_rating;
+				if (max_cycles < 10000 || fitness_rating < 1.94)
+				{
+					System.out.print((" Ev"+fitness_rating).substring(0,9));
+				}
+				better_soln_found = true;
+			}
+		}
+		return better_soln_found;
+	}
+	public LogisticModel log_initialguess()
 	{
 		//find dp/dt for the data, also find max (middle of logistic model)
 		approx_rate = new double[data.length-1];
@@ -146,7 +198,7 @@ public class FitOptimizer
 				max_index = i;
 			}
 		}
-		System.out.println("max_index = "+max_index);
+		//System.out.println("max_index = "+max_index);
 
 		//compare the ratio of rates to the beginning, max and end (max = 1)
 		//the closer the beginning and end are to 0, the more complete the model
@@ -154,22 +206,22 @@ public class FitOptimizer
 		// to approximate model, the normalized high point (max) is compared to beginning and end
 		//  in order to approximate the part of P that is covered by data, use extended form of quadratic to back out to find percentage of P range
 		// %P = -.5 +- .5*sqrt(1-(% of max))
-		System.out.println("max_value: "+approx_rate[max_index]+" right_value:"+
-				approx_rate[approx_rate.length-1]+" left_value:"+approx_rate[0]);
-		System.out.println("left_ratio: "+(approx_rate[0]/approx_rate[max_index]+"").substring(0,4)+
-				" right_ratio: "+(approx_rate[approx_rate.length-1]/approx_rate[max_index]+"").substring(0,4));
-		System.out.println("left quad. form.: -.5+- .5*sqrt(1-rate/max_rate)\n"+
-				(.5-(.5*Math.sqrt(1-(approx_rate[0]/max_rate))))+"");
-		System.out.println("right quad. form.: -.5+- .5*sqrt(1-rate/max_rate)\n"+
-				(.5+(.5*Math.sqrt(1-(approx_rate[approx_rate.length-1]/max_rate))))+"");
+		//System.out.println("max_value: "+approx_rate[max_index]+" right_value:"+
+		//		approx_rate[approx_rate.length-1]+" left_value:"+approx_rate[0]);
+		//System.out.println("left_ratio: "+(approx_rate[0]/approx_rate[max_index]+"").substring(0,4)+
+		//		" right_ratio: "+(approx_rate[approx_rate.length-1]/approx_rate[max_index]+"").substring(0,4));
+		//System.out.println("left quad. form.: -.5+- .5*sqrt(1-rate/max_rate)\n"+
+		//		(.5-(.5*Math.sqrt(1-(approx_rate[0]/max_rate))))+"");
+		//System.out.println("right quad. form.: -.5+- .5*sqrt(1-rate/max_rate)\n"+
+		//		(.5+(.5*Math.sqrt(1-(approx_rate[approx_rate.length-1]/max_rate))))+"");
 		double near_percent = Math.min(.5+(.5*Math.sqrt(1-(approx_rate[0]/max_rate))),
 				.5-(.5*Math.sqrt(1-(approx_rate[0]/max_rate))));
 		double far_percent = Math.max(.5+(.5*Math.sqrt(1-(approx_rate[approx_rate.length-1]/max_rate))),
 				.5-(.5*Math.sqrt(1-(approx_rate[approx_rate.length-1]/max_rate))));
 		double total_normalized_population_range = -near_percent+far_percent;
 
-		System.out.println("near_percent: .5-"+(.5-near_percent)+
-				" far_percent: .5+"+(far_percent-.5));
+		//System.out.println("near_percent: .5-"+(.5-near_percent)+
+		//		" far_percent: .5+"+(far_percent-.5));
 		//if the near data is the max rate, assume that it is the mid point
 		double min_population = 0;
 		if (max_index > 0 && true)
@@ -179,9 +231,9 @@ public class FitOptimizer
 			double current_range = data[max_index][0]-data[0][0];
 			double ratio = (.5-near_percent)/.5;
 			double est_full_range = current_range/ratio;
-			System.out.println("The min current range ("+current_range+") is "+ratio*100+"% of total range ("+est_full_range+")");
+			//System.out.println("The min current range ("+current_range+") is "+ratio*100+"% of total range ("+est_full_range+")");
 			min_population = data[max_index][0]-est_full_range;
-			System.out.println("min_population calc: "+min_population);
+			//System.out.println("min_population calc: "+min_population);
 		}
 
 		//if the data is at it's max growth (exponential pattern) assume that it is at half way point
@@ -193,9 +245,9 @@ public class FitOptimizer
 			double current_range = data[data.length-2][0]-data[max_index][0];
 			double ratio = (far_percent-.5)/.5;
 			double est_full_range = current_range/ratio;
-			System.out.println("The max current range ("+current_range+") is "+ratio*100+"% of total range ("+est_full_range+")");
+			//System.out.println("The max current range ("+current_range+") is "+ratio*100+"% of total range ("+est_full_range+")");
 			max_population = data[max_index][0]+est_full_range;
-			System.out.println("max_population calc: "+max_population);
+			//System.out.println("max_population calc: "+max_population);
 		}
 
 		//max_population is carrying capacity
@@ -212,6 +264,27 @@ public class FitOptimizer
 		double k_estimate = sum/(double)(count);
 		System.out.println("initial value --> dP/dt = "+k_estimate+"*P * (1-(P/"+max_population+")) + "+min_population);
 		return new LogisticModel(k_estimate, max_population, min_population);
+	}
+	public ExponentialModel exp_initialguess()
+	{
+		double sum = 0;
+		double count = 0;
+		for (int i = 0 ; i < data.length-1 ; i++)
+		{
+			sum += data[i+1][0]/data[i][0]-1;
+			count++;
+		}
+		double k = sum/count;
+		System.out.println("initial value --> dP/dt = "+k+" * P");
+		return new ExponentialModel(k);
+	}
+	public LinearModel lin_initialguess()
+	{
+		double x1 = data[data.length-2][1];
+		double y1 = data[data.length-2][0];
+		double x2 = data[data.length-1][1];
+		double y2 = data[data.length-1][0];
+		return new LinearModel( (x2-x1)/(y2-y1) , y1 , x1 );
 	}
 	public double fitRating(LogisticModel test)
 	{
@@ -232,16 +305,43 @@ public class FitOptimizer
 		rating = 100*Math.sqrt(rating) / data[data.length-1][0];
 		return rating;
 	}
-	public LogisticModel[] local_test(LogisticModel start)
+	public double fitRating(ExponentialModel test)
+	{
+		double rating = 100;
+		double sum = 0;
+		int count = 0;
+		for (int i = 0 ; i < data.length-1 ; i++ )
+		{
+			sum += Math.pow( (approx_rate[i] - test.f(data[i][0])) , 2 );
+			count++;
+		}
+		//the rating is the sum of the squares to the line predicted vs. measured data
+		// low is better
+		// 100 is default
+		rating = sum / (double) (count);
+		//get the average distance to the fit, then divide by max population as an approximate
+		// scaling factor so that output is comparable between runs.
+		rating = 100*Math.sqrt(rating) / data[data.length-1][0];
+		return rating;
+	}
+	public LogisticModel[] log_local_test(LogisticModel start)
 	{
 		// returns an array of models near the value of the input model
 		LogisticModel[] ret_models = new LogisticModel[6];
-		ret_models[0] = new LogisticModel( start.k*(1+precision) , start.N , start.c );
+		ret_models[0] = new LogisticModel( start.k*(1+precision)  , start.N , start.c );
 		ret_models[1] = new LogisticModel( start.k*(1-precision)  , start.N , start.c );
-		ret_models[2] = new LogisticModel( start.k , start.N*(1+precision) , start.c );
+		ret_models[2] = new LogisticModel( start.k , start.N*(1+precision)  , start.c );
 		ret_models[3] = new LogisticModel( start.k , start.N*(1-precision)  , start.c );
-		ret_models[4] = new LogisticModel( start.k , start.N , start.c*(1+precision) );
-		ret_models[5] = new LogisticModel( start.k , start.N , start.c*(1-precision) );
+		ret_models[4] = new LogisticModel( start.k , start.N , start.c*(1+precision)  );
+		ret_models[5] = new LogisticModel( start.k , start.N , start.c*(1-precision)  );
+		return ret_models;
+	}
+	public ExponentialModel[] exp_local_test(ExponentialModel start)
+	{
+		// returns an array of models near the value of the input model
+		ExponentialModel[] ret_models = new ExponentialModel[2];
+		ret_models[0] = new ExponentialModel( start.k*(1+precision) );
+		ret_models[1] = new ExponentialModel( start.k*(1-precision) );
 		return ret_models;
 	}
 }
