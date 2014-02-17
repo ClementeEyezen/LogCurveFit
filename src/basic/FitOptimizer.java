@@ -10,7 +10,7 @@ public class FitOptimizer
 	
 	private static double precision = .001;
 	private static int max_cycles = 1000;
-	private static double[][] data_set = northCarolina();
+	private static double[][] data_set = montana();
 	
 	public FitOptimizer(double[][] input)
 	{
@@ -24,7 +24,7 @@ public class FitOptimizer
 	public static void main(String[] args)
 	{
 		FitOptimizer fo = new FitOptimizer(data_set);
-		/* LOGISTIC MODEL
+		///* LOGISTIC MODEL
 		for (int i = 0 ; i < 10 ; i++)
 		{
 			fo.log_model = fo.log_initialguess();
@@ -43,7 +43,7 @@ public class FitOptimizer
 			LogisticModel result = fo.log_result();
 			System.out.println("result for "+(count)+" cycles --> dP/dt = "+result.k+"*P * (1-(P/"+result.N+")) + "+result.c);
 		}//*/
-		///* EXPONENTIAL MODEL
+		/* EXPONENTIAL MODEL
 		for (int i = 0 ; i < 10 ; i++)
 		{
 			fo.exp_model = fo.exp_initialguess();
@@ -63,6 +63,7 @@ public class FitOptimizer
 			System.out.println("result for "+count+" cycles --> dP/dt = "+result.k+" * P");
 		}//*/
 		System.out.println("precision: "+precision);
+		System.out.println("linear model - m = "+fo.lin_result().m);
 	}
 	public static double[][] massachusetts()
 	{
@@ -209,7 +210,7 @@ public class FitOptimizer
 			{
 				log_model = test_set[i];
 				fitness_rating = test_rating;
-				if (max_cycles < 10000 || fitness_rating < 1.5634)
+				if (max_cycles < 1000 || fitness_rating < 5.6587)
 				{
 					System.out.print((" Lv"+fitness_rating).substring(0,9));
 				}
@@ -340,7 +341,9 @@ public class FitOptimizer
 		double y1 = data[data.length-2][0];
 		double x2 = data[data.length-1][1];
 		double y2 = data[data.length-1][0];
-		return new LinearModel( (x2-x1)/(y2-y1) );
+		System.out.println("delta x: "+(x2-x1));
+		System.out.println("delta y: "+(y2-y1));
+		return new LinearModel( 10*(y2-y1)/(x2-x1) );
 	}
 	public double fitRating(LogisticModel test)
 	{
