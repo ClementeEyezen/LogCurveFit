@@ -8,9 +8,9 @@ public class FitOptimizer
 	private ExponentialModel exp_model;
 	private LinearModel lin_model;
 	
-	private static double precision = .001;
+	private static double precision = .01;
 	private static int max_cycles = 1000;
-	private static double[][] data_set = montana();
+	private static double[][] data_set = newYork();
 	
 	public FitOptimizer(double[][] input)
 	{
@@ -24,7 +24,7 @@ public class FitOptimizer
 	public static void main(String[] args)
 	{
 		FitOptimizer fo = new FitOptimizer(data_set);
-		///* LOGISTIC MODEL
+		/* LOGISTIC MODEL
 		for (int i = 0 ; i < 10 ; i++)
 		{
 			fo.log_model = fo.log_initialguess();
@@ -43,7 +43,7 @@ public class FitOptimizer
 			LogisticModel result = fo.log_result();
 			System.out.println("result for "+(count)+" cycles --> dP/dt = "+result.k+"*P * (1-(P/"+result.N+")) + "+result.c);
 		}//*/
-		/* EXPONENTIAL MODEL
+		///* EXPONENTIAL MODEL
 		for (int i = 0 ; i < 10 ; i++)
 		{
 			fo.exp_model = fo.exp_initialguess();
